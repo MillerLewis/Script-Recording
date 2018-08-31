@@ -6,7 +6,7 @@ from pynput.mouse import Button, Controller
 from pynput.keyboard import Key, Controller
 from pynput import keyboard
 from pynput import mouse
-import ScriptRecorde
+import ScriptRecorder
 import threading
 import os
 
