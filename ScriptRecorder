@@ -1,0 +1,111 @@
+from time import time, sleep
+from pynput import mouse
+from pynput import keyboard
+from pynput.keyboard import Key, Controller
+from pynput.mouse import Button, Controller
+
+"""This file will use pynput to record keyboard and mouse input and store the record as an object
+This object will contain all the keyboard inputs, all the mouse inputs (both movement and clicks) along
+with scrolling"""
+
+
+#Can be expanded upon to use a file to set options, to reduce need to ask every time
+def setOptions(f):
+        with open(f,'r') as options:
+                #format first then read
+                lines = options.readlines()
+                for l in lines:
+                        pass
+
+#Will be used to ask questions for options, such as recording all mouse movement
+def askQuestion(question):
+        response = ""
+        while response not in ["y","n"]:
+            response = raw_input(question).lower()
+        return response
+
+#This will be used to help the user know when the recording will begin
+def countdown(message,timeToCountdown = 3,step = 1):
+    for i in range(timeToCountdown/step):
+        print(message + "\t{0}".format(timeToCountdown-i*step))
+        sleep(step)
+
+
+#This is the bulk of the program
+#This class will define a method for storing all the inputs
+class logger(object):
+    """Keyboard and mouse logged events"""
+
+    #Special key will be the keyboard button that will END recording
+    def specialKeyRecorder(self,key):
+        self.specialKey = key
+        return False
+
+    #The function to use with pynput to record when and what mouse button clicked
+    def recordClick(self,x,y,button,pressed):
+        mode = 'Pressed' if pressed else 'Released'
+        self.clickLogs.append(((x,y),button,mode,time()-self.startTime))
+        self.allLogs.append(('click',(x,y),button,mode,time()-self.startTime))
+
+    #The function to use with pynput to record when and where the mouse moves        
+    def recordMove(self,x,y):
+        self.mouseLogs.append( ((x,y) ,time()- self.startTime))
+        self.allLogs.append( ('move',(x,y) ,time()- self.startTime))
+
+    #The function to use with pynput to record when and which direction we scroll       
+    def recordScroll(self,x,y,dx,dy):
+        self.scrollLogs.append( ( (dx,dy) ,time()-self.startTime))
+        self.allLogs.append( ('scroll', (dx,dy) ,time()-self.startTime))
+
+    #The function to use with pynput to record when and what key is pressed  
+    def recordKey(self,key):
+        self.keyLogs.append( (key ,time()-self.startTime) )
+        self.allLogs.append( ("key",key ,time()-self.startTime) )
+        if key == self.specialKey:
+            print("Recording has finished\n")
+            return False
+        else:
+            def recordKey(self,key):
+                pass
+
+
+    #Initialise the object to have its own logs of all input along with the option to record all
+    #mouse input
+    def __init__(self, step = 1):
+        self.allLogs = []
+        self.recordAllMouse = ""
+        self.keyLogs = []
+        self.mouseLogs = []
+        self.clickLogs = []
+        self.scrollLogs = []
+
+
+    def record(self, timeToCountdown = 1, step = 1):
+        if askQuestion("Would you like to record all mouse movement? (y/n)\t") == "n":
+            self.recordMove = None
+
+        #Try to begin the keyboard listener to record the special key
+        try:
+            print("Please press what key you would like to stop recording the script.")
+            with keyboard.Listener(on_press = self.specialKeyRecorder) as specialListener:
+                specialListener.join()
+        except Exception as e:
+            print("Error with speiclaKey recording!")
+            print(e)
+            print("Setting speical key to 'Esc'")
+            self.specialKey = keyboard.Key.esc
+        finally:
+            print("Key to stop recording is: {0}\n".format(self.specialKey))
+            countdown("Recording will begin in",timeToCountdown,step)
+            print("Recording has begun.\n\n")
+
+
+        #Initialise start time and the listener of both keyboard and mouse.
+        self.startTime = time()
+        with mouse.Listener(
+                on_move=self.recordMove,
+                on_click=self.recordClick,
+                on_scroll=self.recordScroll) as listener:
+            with keyboard.Listener(
+                    on_press=self.recordKey) as listener:
+                listener.join()
